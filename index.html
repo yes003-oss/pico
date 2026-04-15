@@ -2,33 +2,95 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Pico W Remote Control</title>
+    <title>Pico W RGB Control</title>
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-        button { padding: 20px 40px; font-size: 20px; cursor: pointer; margin: 10px; border-radius: 10px; border: none; }
-        .on { background-color: #4CAF50; color: white; }
-        .off { background-color: #f44336; color: white; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin-top: 50px; background-color: #f0f2f5; }
+        .container { background: white; padding: 30px; border-radius: 20px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        
+        /* 슬라이더 스타일 */
+        .control-group { margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 15px; }
+        input[type=range] { width: 200px; cursor: pointer; }
+        label { font-weight: bold; width: 60px; }
+        
+        .value-display { width: 40px; font-family: monospace; }
+        
+        /* 색상 미리보기 */
+        #colorPreview { 
+            width: 100%; height: 50px; border-radius: 10px; margin-top: 20px; 
+            border: 1px solid #ddd; background-color: rgb(0,0,0);
+        }
+        
+        #statusText { margin-top: 15px; color: #666; font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <h1>Pico W LED Control</h1>
-    <div id="statusText">데이터 확인 중...</div>
-    <br>
-    <button class="on" onclick="setLED('ON')">LED ON</button>
-    <button class="off" onclick="setLED('OFF')">LED OFF</button>
+
+    <div class="container">
+        <h1>Pico W RGB Control</h1>
+        
+        <div class="control-group">
+            <label style="color: red;">RED</label>
+            <input type="range" id="rRange" min="0" max="255" value="0" oninput="updateRGB()">
+            <span id="rVal" class="value-display">0</span>
+        </div>
+
+        <div class="control-group">
+            <label style="color: green;">GREEN</label>
+            <input type="range" id="gRange" min="0" max="255" value="0" oninput="updateRGB()">
+            <span id="gVal" class="value-display">0</span>
+        </div>
+
+        <div class="control-group">
+            <label style="color: blue;">BLUE</label>
+            <input type="range" id="bRange" min="0" max="255" value="0" oninput="updateRGB()">
+            <span id="bVal" class="value-display">0</span>
+        </div>
+
+        <div id="colorPreview"></div>
+        <div id="statusText">슬라이더를 움직여 색상을 변경하세요</div>
+    </div>
 
     <script>
-        // 본인의 Firebase URL로 교체 (끝에 /ledStatus.json 을 붙여야 합니다)
+        // Firebase URL (수정됨: ledStatus 아래에 객체로 저장)
         const dbUrl = "https://pico-2291c-default-rtdb.asia-southeast1.firebasedatabase.app/ledStatus.json";
 
-        function setLED(state) {
+        function updateRGB() {
+            // 1. HTML 요소에서 값 읽어오기
+            const r = document.getElementById('rRange').value;
+            const g = document.getElementById('gRange').value;
+            const b = document.getElementById('bRange').value;
+
+            // 2. 화면 숫자 업데이트
+            document.getElementById('rVal').innerText = r;
+            document.getElementById('gVal').innerText = g;
+            document.getElementById('bVal').innerText = b;
+
+            // 3. 미리보기 색상 변경
+            document.getElementById('colorPreview').style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+            // 4. Firebase로 데이터 전송 (디바운싱 없이 즉시 전송)
+            sendToFirebase(r, g, b);
+        }
+
+        function sendToFirebase(r, g, b) {
+            const rgbData = {
+                red: parseInt(r),
+                green: parseInt(g),
+                blue: parseInt(b)
+            };
+
             fetch(dbUrl, {
-                method: 'PUT',
-                body: JSON.stringify(state)
+                method: 'PUT', // 전체 객체를 덮어씌움
+                body: JSON.stringify(rgbData)
             })
             .then(res => res.json())
             .then(data => {
-                document.getElementById('statusText').innerText = "상태: " + data;
+                document.getElementById('statusText').innerText = `전송됨: R(${data.red}) G(${data.green}) B(${data.blue})`;
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                document.getElementById('statusText').innerText = "연결 오류 발생";
             });
         }
     </script>
