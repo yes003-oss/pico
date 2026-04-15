@@ -4,105 +4,61 @@
     <meta charset="UTF-8">
     <title>Pico W RGB Control</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin-top: 50px; background-color: #f0f2f5; }
-        .container { background: white; padding: 30px; border-radius: 20px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        
-        /* 슬라이더 스타일 */
-        .control-group { margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 15px; }
-        input[type=range] { width: 200px; cursor: pointer; }
-        label { font-weight: bold; width: 60px; }
-        
-        .value-display { width: 40px; font-family: monospace; }
-        
-        /* 색상 미리보기 */
-        #colorPreview { 
-            width: 100%; height: 50px; border-radius: 10px; margin-top: 20px; 
-            border: 1px solid #ddd; background-color: rgb(0,0,0);
-        }
-        
-        #statusText { margin-top: 15px; color: #666; font-size: 0.9em; }
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 15px; display: inline-block; shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .slider-container { margin: 20px; }
+        input[type=range] { width: 200px; }
+        .label { font-weight: bold; width: 50px; display: inline-block; }
+        #preview { width: 100%; height: 40px; border-radius: 5px; margin-top: 10px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
+    <div class="card">
+        <h1>Pico W RGB 제어</h1>
+        <div id="statusText">슬라이더를 조절하세요</div>
 
-    <div class="container">
-        <h1>Pico W RGB Control</h1>
+        <div class="slider-container">
+            <span class="label" style="color:red">Red</span>
+            <input type="range" id="R" min="0" max="255" value="0" onchange="sendRGB()">
+        </div>
+        <div class="slider-container">
+            <span class="label" style="color:green">Green</span>
+            <input type="range" id="G" min="0" max="255" value="0" onchange="sendRGB()">
+        </div>
+        <div class="slider-container">
+            <span class="label" style="color:blue">Blue</span>
+            <input type="range" id="B" min="0" max="255" value="0" onchange="sendRGB()">
+        </div>
         
-        <div class="control-group">
-            <label style="color: red;">RED</label>
-            <input type="range" id="rRange" min="0" max="255" value="0" oninput="updateRGB()">
-            <span id="rVal" class="value-display">0</span>
-        </div>
-
-        <div class="control-group">
-            <label style="color: green;">GREEN</label>
-            <input type="range" id="gRange" min="0" max="255" value="0" oninput="updateRGB()">
-            <span id="gVal" class="value-display">0</span>
-        </div>
-
-        <div class="control-group">
-            <label style="color: blue;">BLUE</label>
-            <input type="range" id="bRange" min="0" max="255" value="0" oninput="updateRGB()">
-            <span id="bVal" class="value-display">0</span>
-        </div>
-
-        <div id="colorPreview"></div>
-        <div id="statusText">슬라이더를 움직여 색상을 변경하세요</div>
+        <div id="preview"></div>
     </div>
 
     <script>
-        // Firebase URL (수정됨: ledStatus 아래에 객체로 저장)
+        // 본인의 Firebase URL (끝에 /ledStatus.json 확인)
         const dbUrl = "https://pico-2291c-default-rtdb.asia-southeast1.firebasedatabase.app/ledStatus.json";
 
-      // 이 함수로 기존 setLED를 대체하세요
-function updateRGB() {
-    // 1. 슬라이더에서 값 읽기 (기본값 0 처리)
-    const r = document.getElementById('rRange').value || 0;
-    const g = document.getElementById('gRange').value || 0;
-    const b = document.getElementById('bRange').value || 0;
+        function sendRGB() {
+            const r = document.getElementById('R').value;
+            const g = document.getElementById('G').value;
+            const b = document.getElementById('B').value;
 
-    // 2. 화면 숫자 업데이트
-    document.getElementById('rVal').innerText = r;
-    document.getElementById('gVal').innerText = g;
-    document.getElementById('bVal').innerText = b;
+            // 미리보기 색상 변경
+            document.getElementById('preview').style.backgroundColor = `rgb(${r},${g},${b})`;
 
-    // 3. Firebase 전송 데이터 구성 (문자열이 아닌 '숫자'로 변환)
-    const rgbData = {
-        Red: parseInt(r),
-        Green: parseInt(g),
-        Blue: parseInt(b)
-    };
-
-    // 4. Firebase로 전송
-    fetch(dbUrl, {
-        method: 'PUT',
-        body: JSON.stringify(rgbData)
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log("전송 성공:", data);
-    });
-}
-
-        function sendToFirebase(r, g, b) {
-            const rgbData = {
-                red: parseInt(r),
-                green: parseInt(g),
-                blue: parseInt(b)
+            // Firebase에 숫자(Number) 형태로 전송
+            const data = {
+                Red: parseInt(r),
+                Green: parseInt(g),
+                Blue: parseInt(b)
             };
 
             fetch(dbUrl, {
-                method: 'PUT', // 전체 객체를 덮어씌움
-                body: JSON.stringify(rgbData)
+                method: 'PUT',
+                body: JSON.stringify(data)
             })
             .then(res => res.json())
-            .then(data => {
-                document.getElementById('statusText').innerText = `전송됨: R(${data.red}) G(${data.green}) B(${data.blue})`;
-            })
-            .catch(err => {
-                console.error("Error:", err);
-                document.getElementById('statusText').innerText = "연결 오류 발생";
+            .then(json => {
+                document.getElementById('statusText').innerText = `전송 완료: R(${json.Red}) G(${json.Green}) B(${json.Blue})`;
             });
         }
     </script>
