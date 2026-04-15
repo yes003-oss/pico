@@ -55,23 +55,35 @@
         // Firebase URL (수정됨: ledStatus 아래에 객체로 저장)
         const dbUrl = "https://pico-2291c-default-rtdb.asia-southeast1.firebasedatabase.app/ledStatus.json";
 
-        function updateRGB() {
-            // 1. HTML 요소에서 값 읽어오기
-            const r = document.getElementById('rRange').value;
-            const g = document.getElementById('gRange').value;
-            const b = document.getElementById('bRange').value;
+      // 이 함수로 기존 setLED를 대체하세요
+function updateRGB() {
+    // 1. 슬라이더에서 값 읽기 (기본값 0 처리)
+    const r = document.getElementById('rRange').value || 0;
+    const g = document.getElementById('gRange').value || 0;
+    const b = document.getElementById('bRange').value || 0;
 
-            // 2. 화면 숫자 업데이트
-            document.getElementById('rVal').innerText = r;
-            document.getElementById('gVal').innerText = g;
-            document.getElementById('bVal').innerText = b;
+    // 2. 화면 숫자 업데이트
+    document.getElementById('rVal').innerText = r;
+    document.getElementById('gVal').innerText = g;
+    document.getElementById('bVal').innerText = b;
 
-            // 3. 미리보기 색상 변경
-            document.getElementById('colorPreview').style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    // 3. Firebase 전송 데이터 구성 (문자열이 아닌 '숫자'로 변환)
+    const rgbData = {
+        Red: parseInt(r),
+        Green: parseInt(g),
+        Blue: parseInt(b)
+    };
 
-            // 4. Firebase로 데이터 전송 (디바운싱 없이 즉시 전송)
-            sendToFirebase(r, g, b);
-        }
+    // 4. Firebase로 전송
+    fetch(dbUrl, {
+        method: 'PUT',
+        body: JSON.stringify(rgbData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("전송 성공:", data);
+    });
+}
 
         function sendToFirebase(r, g, b) {
             const rgbData = {
